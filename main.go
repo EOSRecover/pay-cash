@@ -17,16 +17,20 @@ var (
 
 func main() {
 	// Check if the account is valid
-	// if res := CheckAccount(); res {
-	// 	fmt.Println("Address Valid")
-	// } else {
-	// 	fmt.Println("Address Invalid")
-	// }
+	if res := CheckAccount(); res {
+		
+		fmt.Println("Address Valid")
+	} else {
+		
+		fmt.Println("Address Invalid")
+	}
 	
 	// Check if the proposal is valid
 	if res := CheckProposal(); res {
+		
 		fmt.Println("Proposal Valid")
 	} else {
+		
 		fmt.Println("Proposal Invalid")
 	}
 }
