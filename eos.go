@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eos-go/msig"
@@ -16,8 +17,8 @@ import (
 
 var (
 	DfuseKey = "6fe371219e7a2ea1594dec6c1f86b869" // API key for Dfuse service
-	EndPoint = "https://eos.greymass.com"
-	// EndPoint = "https://jungle4.cryptolions.io"   // Endpoint for EOS blockchain
+	// EndPoint = "https://eos.greymass.com"
+	EndPoint = "https://jungle4.cryptolions.io" // Endpoint for EOS blockchain
 )
 
 // TokenResponse structure for receiving JSON response
@@ -203,7 +204,7 @@ func decodeActionData(hexData string) (data *TransferData, err error) {
 }
 
 // GetProposal retrieves the proposal details from the eosio.msig contract
-func GetProposal(acc, name string) (array []msig.ProposalRow, err error) {
+func GetProposal(acc, name string) (proposal *msig.ProposalRow, err error) {
 	api := eos.New(EndPoint)
 	
 	resp, err := api.GetTableRows(context.TODO(), eos.GetTableRowsRequest{
@@ -223,34 +224,47 @@ func GetProposal(acc, name string) (array []msig.ProposalRow, err error) {
 		return
 	}
 	
-	array = proposals
+	for _, p := range proposals {
+		
+		if p.ProposalName.String() == name {
+			
+			proposal = &p
+			break
+		}
+	}
+	
+	if proposal == nil {
+		
+		err = errors.New("NOT FOUND")
+	}
 	return
 }
 
 // GetL1ProposalActions retrieves actions from Level 1 proposals
 func GetL1ProposalActions(acc, name string) (array []*msig.Approve, err error) {
-	proposals, err := GetProposal(acc, name)
+	proposal, err := GetProposal(acc, name)
 	if err != nil {
 		return
 	}
 	
-	for _, proposal := range proposals {
-		var tx eos.Transaction
-		if err = eos.UnmarshalBinary(proposal.PackedTransaction, &tx); err != nil {
-			fmt.Println(proposal, " -> ", err)
+	var tx eos.Transaction
+	if err = eos.UnmarshalBinary(proposal.PackedTransaction, &tx); err != nil {
+		
+		fmt.Println(proposal, " -> ", err)
+		return
+	}
+	
+	for _, action := range tx.Actions {
+		var approvalAction msig.Approve
+		if err = eos.UnmarshalBinary(action.HexData, &approvalAction); err != nil {
+			
+			fmt.Println(proposal, "exec action -> ", err)
 			continue
 		}
 		
-		for _, action := range tx.Actions {
-			var approvalAction msig.Approve
-			if err = eos.UnmarshalBinary(action.HexData, &approvalAction); err != nil {
-				fmt.Println(proposal, "exec action -> ", err)
-				continue
-			}
+		if approvalAction.Level.Actor == "eosio" {
 			
-			if approvalAction.Level.Actor == "eosio" {
-				array = append(array, &approvalAction)
-			}
+			array = append(array, &approvalAction)
 		}
 	}
 	
@@ -268,35 +282,36 @@ type EVMAdminAction struct {
 
 // GetL2ProposalActions retrieves actions from Level 2 proposals
 func GetL2ProposalActions(acc, name string) (array []*EVMAdminAction, err error) {
-	proposals, err := GetProposal(acc, name)
+	proposal, err := GetProposal(acc, name)
 	if err != nil {
 		return
 	}
 	
-	for _, proposal := range proposals {
-		var tx eos.Transaction
-		if err = eos.UnmarshalBinary(proposal.PackedTransaction, &tx); err != nil {
-			fmt.Println(proposal, " -> ", err)
+	var tx eos.Transaction
+	if err = eos.UnmarshalBinary(proposal.PackedTransaction, &tx); err != nil {
+		
+		fmt.Println(proposal, " -> ", err)
+		return
+	}
+	
+	for _, action := range tx.Actions {
+		var execAction sudo.Exec
+		
+		if err = eos.UnmarshalBinary(action.HexData, &execAction); err != nil {
+			
+			fmt.Println(proposal, "exec action -> ", err)
 			break
 		}
 		
-		for _, action := range tx.Actions {
-			var execAction sudo.Exec
-			
-			if err = eos.UnmarshalBinary(action.HexData, &execAction); err != nil {
-				fmt.Println(proposal, "exec action -> ", err)
+		for _, rawAction := range execAction.Transaction.Actions {
+			var adminAction EVMAdminAction
+			if err = eos.UnmarshalBinary(rawAction.HexData, &adminAction); err != nil {
+				
+				fmt.Println(proposal, "admin action -> ", err)
 				break
 			}
 			
-			for _, rawAction := range execAction.Transaction.Actions {
-				var adminAction EVMAdminAction
-				if err = eos.UnmarshalBinary(rawAction.HexData, &adminAction); err != nil {
-					fmt.Println(proposal, "admin action -> ", err)
-					break
-				}
-				
-				array = append(array, &adminAction)
-			}
+			array = append(array, &adminAction)
 		}
 	}
 	

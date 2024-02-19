@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/big"
+	"strconv"
 	"strings"
 )
 
@@ -9,17 +11,17 @@ import (
 var (
 	HACKER            = "nrwgthbeupex"
 	Sender            = "evmgreatagai"                             // send proposal account
-	ProposalName      = "c5fc2e45f4b4"                             // L1 ProposalName
+	ProposalName      = "eb122312efde"                             // L1 ProposalName
 	RecoverEVMAddress = "bbbbbbbbbbbbbbbbbbbbbbbb55300ba914daae00" // eosio.evm
 )
 
 func main() {
 	// Check if the account is valid
-	if res := CheckAccount(); res {
-		fmt.Println("Address Valid")
-	} else {
-		fmt.Println("Address Invalid")
-	}
+	// if res := CheckAccount(); res {
+	// 	fmt.Println("Address Valid")
+	// } else {
+	// 	fmt.Println("Address Invalid")
+	// }
 	
 	// Check if the proposal is valid
 	if res := CheckProposal(); res {
@@ -57,8 +59,6 @@ func CheckAccount() bool {
 			break
 		}
 		
-		checkedAddresses := make(map[string]*Address)
-		
 		for _, action := range actions {
 			if action.From.String() != HACKER {
 				
@@ -86,13 +86,16 @@ func CheckAccount() bool {
 			} else {
 				
 				fmt.Println(action.Memo, " invalid")
+				break
 			}
 		}
 		
-		if len(checkedAddresses) == len(addresses) {
+		if len(addresses) == 0 {
+			
 			fmt.Println(txId, " -> checked")
 			checkedTxId = append(checkedTxId, txId)
 		} else {
+			
 			fmt.Println(txId, " -> not checked")
 		}
 	}
@@ -115,7 +118,9 @@ func CheckProposal() bool {
 	
 	tempAddresses := make(map[string]*Address)
 	for _, address := range addresses {
-		tempAddresses[strings.Replace(address.Address, "0x", "", 1)] = address
+		
+		key := strings.Replace(address.Address, "0x", "", 1)
+		tempAddresses[strings.ToLower(key)] = address
 	}
 	
 	array, err := GetL1ProposalActions(Sender, ProposalName)
@@ -124,30 +129,78 @@ func CheckProposal() bool {
 		return false
 	}
 	
+	totalCount := 0
 	for _, p := range array {
 		var actions []*EVMAdminAction
-		actions, err = GetL2ProposalActions(Sender, p.ProposalName.String())
-		if err != nil {
-			fmt.Println("Get L2 proposal error -> ", err)
-			return false
+		
+		for {
+			actions, err = GetL2ProposalActions(Sender, p.ProposalName.String())
+			if err != nil {
+				
+				fmt.Println("Get L2 proposal error -> ", err)
+				err = nil
+			} else {
+				
+				break
+			}
+			
 		}
 		
 		for _, action := range actions {
-			if tempAddresses[action.From.String()] == nil {
+			
+			addr := tempAddresses[action.From.String()]
+			
+			if addr == nil {
+				
 				fmt.Println(action.From.String(), " not found")
 				return false
 			}
 			
 			if action.To.String() != RecoverEVMAddress {
+				
 				fmt.Println(action.To.String(), " receiver address incorrect")
 				return false
 			}
 			
+			// Convert the transfer quantity from byte slice to big.Int
+			value := new(big.Int).SetBytes(action.Value)
+			
+			// Base precision: 1x10^17
+			precision := new(big.Int)
+			precision.SetString("100000000000000000", 10)
+			
+			// Calculate the real value by dividing by precision
+			value.Div(value, precision)
+			
+			// Convert the balance from `account.csv` to an integer
+			balance, e := strconv.ParseInt(addr.Quantity, 10, 64)
+			if e != nil {
+				
+				fmt.Println(addr.Address, "balance error:", e)
+				return false
+			}
+			
+			// Adjust the balance to match the precision
+			balance *= 10
+			
+			// Calculate the transfer quantity as an int64
+			quantity := value.Int64()
+			
+			// Reserve 0.1 EOS for EVM gas fees and validate the quantity
+			if balance > quantity && balance-quantity > 1 {
+				
+				fmt.Println(addr.Address, "incorrect transfer quantity")
+				return false
+			}
+			
+			totalCount++
+			fmt.Println(action.From.String(), " checked -> total ", totalCount)
 			delete(tempAddresses, action.From.String())
 		}
 	}
 	
 	if len(tempAddresses) == 0 {
+		
 		return true
 	}
 	

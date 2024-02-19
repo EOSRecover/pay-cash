@@ -20,3 +20,36 @@ The project needs to validate two key points:
 The first column `tx_id` is the transaction ID on the EOS blockchain. The validation process involves querying the `tx_id` using dfuse's API to confirm that the transaction action is a `transfer` operation, with `from` being the hacker's address and `to` being `eosio.evm`.
 
 - **Proposal Validation**: This is to prevent the proposal from containing other malicious proposals. Due to the need to operate on more than 6000+ addresses, a single proposal cannot complete the operation. Therefore, secondary proposals are sent, and the proposals are for BPs to execute the `approve` operation on secondary proposals. The secondary proposals need to read all actions of the proposal to ensure that they are operating the `admincall` action of `eosio.evm`, with the `from` address being the EVM address in `account.csv` and the `to` address being the EVM address of `eos.recover`.
+
+- **Quantity Validation**: In addition to address validation, the project also needs to ensure that the quantity of EOS being transferred in the proposals is correct. Since a portion of EOS is reserved for paying EVM gas fees, the quantity transferred should be slightly less than the total balance in `account.csv`. The following code snippet demonstrates this validation:
+
+    ```go
+    // Convert the transfer quantity from byte slice to big.Int
+    value := new(big.Int).SetBytes(action.Value)
+
+    // Base precision: 1x10^17
+    precision := new(big.Int).SetString("100000000000000000", 10)
+
+    // Calculate the real value by dividing by precision
+    value.Div(value, precision)
+
+    // Convert the balance from `account.csv` to an integer
+    balance, err := strconv.ParseInt(addr.Quantity, 10, 64)
+    if err != nil {
+        fmt.Println(addr.Address, "balance error:", err)
+        return false
+    }
+
+    // Adjust the balance to match the precision
+    balance *= 10
+
+    // Calculate the transfer quantity as an int64
+    quantity := value.Int64()
+
+    // Reserve 0.1 EOS for EVM gas fees and validate the quantity
+    if balance > quantity && balance-quantity > 1 {
+  
+        fmt.Println(addr.Address, "incorrect transfer quantity")
+        return false
+    }
+    ```
