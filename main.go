@@ -61,16 +61,30 @@ func CheckAccount() bool {
 		
 		for _, action := range actions {
 			if action.From.String() != HACKER {
+				
 				continue
 			}
 			
 			if action.To != "eosio.evm" {
+				
 				continue
 			}
 			
-			if _, ok := addresses[action.Memo]; ok {
-				delete(addresses, action.Memo)
+			if v, ok := addresses[action.Memo]; ok {
+				
+				// check balance
+				balance := v.Quantity + ".0000 " + v.Token
+				
+				if action.Quantity.String() == balance {
+					
+					delete(addresses, action.Memo)
+				} else {
+					
+					fmt.Println(action.Memo, " balance incorrect")
+				}
+				
 			} else {
+				
 				fmt.Println(action.Memo, " invalid")
 			}
 		}
