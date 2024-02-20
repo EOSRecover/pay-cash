@@ -17,8 +17,8 @@ import (
 
 var (
 	DfuseKey = "6fe371219e7a2ea1594dec6c1f86b869" // API key for Dfuse service
-	// EndPoint = "https://eos.greymass.com"
-	EndPoint = "https://jungle4.cryptolions.io" // Endpoint for EOS blockchain
+	EndPoint = "https://eos.greymass.com"
+	// EndPoint = "https://jungle4.cryptolions.io" // Endpoint for EOS blockchain
 )
 
 // TokenResponse structure for receiving JSON response

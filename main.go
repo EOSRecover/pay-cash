@@ -10,8 +10,8 @@ import (
 // Define global variables, including the hacker's address, sender, proposal name, and the EVM address to be recovered
 var (
 	HACKER            = "nrwgthbeupex"
-	Sender            = "evmgreatagai"                             // send proposal account
-	ProposalName      = "eb122312efde"                             // L1 ProposalName
+	Sender            = "smhgshaoahnf"                             // send proposal account
+	ProposalName      = "4eddae555b14"                             // L1 ProposalName
 	RecoverEVMAddress = "bbbbbbbbbbbbbbbbbbbbbbbb55300ba914daae00" // eosio.evm
 )
 
