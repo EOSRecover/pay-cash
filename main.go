@@ -11,19 +11,19 @@ import (
 var (
 	HACKER            = "nrwgthbeupex"
 	Sender            = "smhgshaoahnf"                             // send proposal account
-	ProposalName      = "4eddae555b14"                             // L1 ProposalName
+	ProposalName      = "faa2fc1f2ce3"                             // L1 ProposalName
 	RecoverEVMAddress = "bbbbbbbbbbbbbbbbbbbbbbbb55300ba914daae00" // eosio.evm
 )
 
 func main() {
 	// Check if the account is valid
-	if res := CheckAccount(); res {
-		
-		fmt.Println("Address Valid")
-	} else {
-		
-		fmt.Println("Address Invalid")
-	}
+	// if res := CheckAccount(); res {
+	//
+	// 	fmt.Println("Address Valid")
+	// } else {
+	//
+	// 	fmt.Println("Address Invalid")
+	// }
 	
 	// Check if the proposal is valid
 	if res := CheckProposal(); res {
@@ -138,7 +138,7 @@ func CheckProposal() bool {
 		var actions []*EVMAdminAction
 		
 		for {
-			actions, err = GetL2ProposalActions(Sender, p.ProposalName.String())
+			actions, err = GetL2ProposalActions(Sender, p.ProposalName.String(), false)
 			if err != nil {
 				
 				fmt.Println("Get L2 proposal error -> ", err)

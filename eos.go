@@ -262,10 +262,10 @@ func GetL1ProposalActions(acc, name string) (array []*msig.Approve, err error) {
 			continue
 		}
 		
-		if approvalAction.Level.Actor == "eosio" {
-			
-			array = append(array, &approvalAction)
-		}
+		// if approvalAction.Level.Actor == "eosio" {
+		
+		array = append(array, &approvalAction)
+		// }
 	}
 	
 	return
@@ -281,7 +281,7 @@ type EVMAdminAction struct {
 }
 
 // GetL2ProposalActions retrieves actions from Level 2 proposals
-func GetL2ProposalActions(acc, name string) (array []*EVMAdminAction, err error) {
+func GetL2ProposalActions(acc, name string, useSuper bool) (array []*EVMAdminAction, err error) {
 	proposal, err := GetProposal(acc, name)
 	if err != nil {
 		return
@@ -294,25 +294,42 @@ func GetL2ProposalActions(acc, name string) (array []*EVMAdminAction, err error)
 		return
 	}
 	
-	for _, action := range tx.Actions {
-		var execAction sudo.Exec
+	if useSuper {
 		
-		if err = eos.UnmarshalBinary(action.HexData, &execAction); err != nil {
+		for _, action := range tx.Actions {
+			var execAction sudo.Exec
 			
-			fmt.Println(proposal, "exec action -> ", err)
-			break
-		}
-		
-		for _, rawAction := range execAction.Transaction.Actions {
-			var adminAction EVMAdminAction
-			if err = eos.UnmarshalBinary(rawAction.HexData, &adminAction); err != nil {
+			if err = eos.UnmarshalBinary(action.HexData, &execAction); err != nil {
 				
-				fmt.Println(proposal, "admin action -> ", err)
+				fmt.Println(proposal, "exec action -> ", err)
 				break
 			}
 			
-			array = append(array, &adminAction)
+			for _, rawAction := range execAction.Transaction.Actions {
+				var adminAction EVMAdminAction
+				if err = eos.UnmarshalBinary(rawAction.HexData, &adminAction); err != nil {
+					
+					fmt.Println(proposal, "admin action -> ", err)
+					break
+				}
+				
+				array = append(array, &adminAction)
+			}
 		}
+		
+		return
+	}
+	
+	for _, action := range tx.Actions {
+		
+		var adminAction EVMAdminAction
+		if err = eos.UnmarshalBinary(action.HexData, &adminAction); err != nil {
+			
+			fmt.Println(proposal, "admin action -> ", err)
+			break
+		}
+		
+		array = append(array, &adminAction)
 	}
 	
 	return
