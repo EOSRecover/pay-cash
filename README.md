@@ -53,3 +53,22 @@ The first column `tx_id` is the transaction ID on the EOS blockchain. The valida
         return false
     }
     ```
+
+-----
+
+#### ENF Blog
+https://eosnetwork.com/llog/advancing-blockchain-defense
+
+#### Paycash Open Letter
+##### Website
+https://paycashswap.com/open-letters
+
+##### Facebook
+https://www.facebook.com/share/p/szeQCHMj1Ssq5cuP/?mibextid=xfxF2i
+
+##### Insta
+https://www.instagram.com/p/C3zb-zgMz0h/?igsh=Y2htbGRiYW8zbmRu
+
+##### Twitter
+https://twitter.com/PayCashTweet/status/1762032720501203036?t=Gktov0UOVj_dp0bfY4JDCQ&s=19
+
