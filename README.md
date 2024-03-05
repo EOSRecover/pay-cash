@@ -57,7 +57,7 @@ The first column `tx_id` is the transaction ID on the EOS blockchain. The valida
 -----
 
 #### ENF Blog
-https://eosnetwork.com/llog/advancing-blockchain-defense
+https://eosnetwork.com/blog/advancing-blockchain-defense
 
 #### Paycash Open Letter
 ##### Website
